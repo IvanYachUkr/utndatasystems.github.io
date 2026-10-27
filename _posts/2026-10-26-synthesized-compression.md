@@ -35,13 +35,16 @@ This is a fine state of affairs, and these codecs are marvels of engineering. Ye
 
 The idea of synthesizing a compressor for an individual file is [hardly new](https://ieeexplore.ieee.org/document/7877101). What has changed, rather dramatically, we should say, is the machinery available to pursue it. Coding models have become more capable and less expensive in a remarkably short time. OpenAI's GPT-6 Astra was our favorite when we wrote the paper, and by the time we sat down to write this post, Claude Opus 5.5 had already arrived, beating previous models on multiple benchmarks yet again. This seemed like a good reason to revisit an old idea: why painstakingly engineer a codec for a specific dataset, whatever kind of data it may contain, when an agent might discover and implement one for us? Better still, compression offers an unusually reliable way to check its correctness. Whatever the agent invents, we can compress the data, decompress it, and compare the result with the original, byte for byte.
 
-## An Example
+The agent examined the [OpenStack](https://github.com/logpai/loghub/tree/master/OpenStack) logs and recognized a pattern that seems obvious in retrospect: the lines consist largely of timestamps, instance IDs, and recurring boilerplate. As the animation below shows, it kept the constant characters in templates, packed the changing digits of timestamps and IDs into four-bit nibbles, and wrote an AVX-512 decoder that expands the nibbles and shuffles them back into place. The resulting codec decodes at 13 GB/s, compared with `LZ4`'s 8 GB/s, while achieving an 11× compression factor instead of 9×, respectively.
 
-Here is an example of a compression codec that our agent came up by itself:
-
-{% include figure.liquid loading="eager" path="assets/img/posts/synthesized-compression-1.jpg" %}
-
-The agent examined the [OpenStack](https://github.com/logpai/loghub/tree/master/OpenStack) logs and recognized a pattern that seems obvious in retrospect: the lines consist largely of timestamps, instance IDs, and recurring boilerplate. It therefore kept the constant characters in templates, packed the changing digits of timestamps and IDs into four-bit nibbles, and wrote an AVX-512 decoder that expands the nibbles and shuffles them back into place. The resulting codec decodes at 13 GB/s, compared with `LZ4`'s 8 GB/s, while achieving an 11× compression factor instead of 9×, respectively.
+<video class="img-fluid rounded d-block mx-auto my-5"
+       controls playsinline muted loop preload="metadata"
+       width="1920" height="1200" style="width: 100%; height: auto;"
+       poster="{{ '/assets/img/posts/openstack-a1-decoder-poster.jpg' | relative_url }}"
+       aria-label="Animation of the OpenStack A1 decoder reconstructing a log row">
+  <source src="{{ '/assets/video/openstack-a1-decoder.mp4' | relative_url }}" type="video/mp4">
+  Your browser cannot play this video. <a href="{{ '/assets/video/openstack-a1-decoder.mp4' | relative_url }}">Download the animation</a>.
+</video>
 
 To be clear, there is nothing fundamentally novel about the individual techniques involved. Template-based log compression has been explored before ([CLP](https://www.usenix.org/conference/osdi21/presentation/rodrigues)), and an experienced engineer could certainly have designed a similar codec. That, however, is not what makes the result interesting. The remarkable part is that *nobody had to design it*. The agent discovered the structure and implemented the codec independently, simply because we allowed it to do something that general-purpose algorithm design ordinarily discourages: *overfit*.
 
